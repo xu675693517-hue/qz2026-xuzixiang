@@ -1,0 +1,8 @@
+# 工程题 A：文章管理系统（数据层）依赖
+#
+# 安装：pip install -r requirements.txt
+Django>=5.1,<6.0
+Pillow>=10.0          # 封面图缩略图（加分项 1）
+
+# Windows 上 Django 需要 tzdata 才能使用 USE_TZ=True + Asia/Shanghai
+tzdata; platform_system == "Windows"
