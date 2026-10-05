@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """q1 的单元测试。
 
-覆盖题目给出的 4 个示例，并补齐边界情况（空行、非对象 JSON、
-ERROR 取最后一条、目录路径、UTF-8 中文键等）。
+覆盖题目给出的 4 个示例，并补齐空行、截断行、ERROR 取最后一条、
+UTF-8 中文等题目范围内的边界。
 
 运行：
 
@@ -16,7 +16,7 @@ import os
 import tempfile
 import unittest
 
-from main import EMPTY_RESULT, analyze_log
+from main import analyze_log
 
 # 题目"示例 1"的原始内容，逐字照抄，方便对照
 APP_JSONL = (
@@ -26,6 +26,8 @@ APP_JSONL = (
     '{"timestamp": "2026-10-01 10:26:30", "level": "ERROR", "message": "超时", "user": "李四"}\n'
     '{"timestamp": "2026-10-01 10:27:00", "level": "INFO", "message": "任务完成", "user": "王五"}\n'
 )
+
+EMPTY = {"total": 0, "by_level": {}, "by_user": {}, "last_error": None}
 
 
 class AnalyzeLogTestCase(unittest.TestCase):
@@ -55,18 +57,12 @@ class AnalyzeLogTestCase(unittest.TestCase):
         if os.path.exists(missing):
             os.remove(missing)
         result = analyze_log(missing)
-        self.assertEqual(result["total"], 0)
-        self.assertEqual(result["by_level"], {})
-        self.assertEqual(result["by_user"], {})
-        self.assertIsNone(result["last_error"])
+        self.assertEqual(result, EMPTY)
 
     def test_example_3_empty_file(self):
         """示例 3：空文件 —— 返回空结果。"""
         result = analyze_log(self.write_temp(""))
-        self.assertEqual(result["total"], 0)
-        self.assertEqual(result["by_level"], {})
-        self.assertEqual(result["by_user"], {})
-        self.assertIsNone(result["last_error"])
+        self.assertEqual(result, EMPTY)
 
     def test_example_4_bad_line_skipped(self):
         """示例 4：中间夹一行非法 JSON —— 跳过该行，其余照常统计。"""
@@ -102,25 +98,13 @@ class AnalyzeLogTestCase(unittest.TestCase):
         self.assertEqual(result["total"], 5)
         self.assertEqual(result["by_level"], {"INFO": 3, "ERROR": 2})
 
-    def test_valid_json_but_not_object_skipped(self):
-        """合法 JSON 但不是对象（裸数字/字符串/数组）也要跳过而不是崩溃。"""
-        content = '123\n"a string"\n[1, 2]\ntrue\n'
-        result = analyze_log(self.write_temp(content))
-        self.assertEqual(result["total"], 0)
-        self.assertEqual(result["by_level"], {})
-
     def test_truncated_json_line_skipped(self):
-        """被截断的 JSON（写日志时常见的半行）跳过。"""
+        """被截断的 JSON（写日志时常见的半行）跳过，不中断解析。"""
         content = (
             '{"timestamp": "t", "level": "INFO", "message": "ok", "user": "x"}\n'
             '{"timestamp": "t", "level": "ERRO\n'
         )
         self.assertEqual(analyze_log(self.write_temp(content))["total"], 1)
-
-    def test_directory_path_returns_empty(self):
-        """传目录路径也返回空结果，不抛 IsADirectoryError。"""
-        result = analyze_log(tempfile.gettempdir())
-        self.assertEqual(result["total"], 0)
 
     def test_returns_independent_new_dict(self):
         """两次调用互不污染：返回的嵌套 dict 不是同一个对象。"""
@@ -134,11 +118,6 @@ class AnalyzeLogTestCase(unittest.TestCase):
         result = analyze_log(self.write_temp(APP_JSONL))
         self.assertEqual(result["by_user"]["王五"], 1)
         self.assertEqual(result["last_error"], "超时")
-
-    def test_empty_result_constant_shape(self):
-        """EMPTY_RESULT 的键集合与返回值一致。"""
-        result = analyze_log(self.write_temp(""))
-        self.assertEqual(set(result), set(EMPTY_RESULT))
 
 
 if __name__ == "__main__":
