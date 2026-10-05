@@ -25,10 +25,6 @@ from .thumbnails import THUMBNAIL_WIDTH, make_thumbnail
 
 User = get_user_model()
 
-# 测试期间媒体文件写到临时目录，别污染项目的 media/
-TEST_MEDIA_ROOT = tempfile.mkdtemp(prefix="qz2026-test-media-")
-
-
 def make_image_bytes(width: int, height: int, fmt: str = "PNG") -> bytes:
     """生成一张纯色图片的字节内容。"""
     from PIL import Image
@@ -38,8 +34,24 @@ def make_image_bytes(width: int, height: int, fmt: str = "PNG") -> bytes:
     return buffer.getvalue()
 
 
-@override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT)
-class BaseBlogTestCase(TestCase):
+class TempMediaRootMixin:
+    """给每个测试类一个临时 MEDIA_ROOT，用完即删——不在 %TEMP% 里留垃圾。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls._media_dir = tempfile.TemporaryDirectory(prefix="qz2026-test-media-")
+        cls._media_override = override_settings(MEDIA_ROOT=cls._media_dir.name)
+        cls._media_override.enable()
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        cls._media_override.disable()
+        cls._media_dir.cleanup()
+
+
+class BaseBlogTestCase(TempMediaRootMixin, TestCase):
     """公共夹具。"""
 
     @classmethod
@@ -387,6 +399,9 @@ class AttachmentTests(BaseBlogTestCase):
         for _ in range(3):
             response = self.client.get(reverse("blog:attachment_download", args=[attachment.pk]))
             self.assertEqual(response.status_code, 200)
+            # FileResponse 会一直持有文件句柄，测试里不关掉的话 Windows 上
+            # 临时 MEDIA_ROOT 整个删不掉（tearDownClass 会报 WinError 32）。
+            response.close()
 
         attachment.refresh_from_db()
         self.assertEqual(attachment.downloads, 3)
