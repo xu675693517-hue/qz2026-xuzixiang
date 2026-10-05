@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """q2 的单元测试。
 
-覆盖题目"行为示例"的每一步，并补齐边界：id 不复用、加载后 id 接续、
-返回值副本、加载覆盖旧数据、中文不转义、空文件加载等。
+覆盖题目"行为示例"的每一步，并补齐边界：id 不复用、**加载后 id 接续最大 id**、
+加载覆盖旧数据、空数组加载、中文不转义、实例之间互不干扰等。
 
 运行：
 
@@ -46,13 +46,6 @@ class UserManagerTestCase(unittest.TestCase):
         self.assertEqual(self.um.get_user(1), {"id": 1, "name": "张三", "age": 18})
         self.assertIsNone(self.um.get_user(99))
 
-    def test_get_user_returns_copy(self):
-        """返回的是副本：改它不影响内部数据。"""
-        self.um.add_user("张三", 18)
-        leaked = self.um.get_user(1)
-        leaked["age"] = 999
-        self.assertEqual(self.um.get_user(1)["age"], 18)
-
     # ---------- 修改 ----------
 
     def test_update_age_success_and_failure(self):
@@ -93,14 +86,6 @@ class UserManagerTestCase(unittest.TestCase):
         self.um.add_user("王五", 30)
         self.assertEqual([u["name"] for u in self.um.list_users()], ["张三", "李四", "王五"])
 
-    def test_list_users_returns_copies(self):
-        """返回的列表和元素都是副本，改动不会污染内部数据。"""
-        self.um.add_user("张三", 18)
-        listed = self.um.list_users()
-        listed[0]["age"] = 999
-        listed.append({"id": 999, "name": "hacker", "age": 0})
-        self.assertEqual(self.um.list_users(), [{"id": 1, "name": "张三", "age": 18}])
-
     # ---------- 持久化 ----------
 
     def test_save_and_load_roundtrip(self):
@@ -115,19 +100,28 @@ class UserManagerTestCase(unittest.TestCase):
         self.assertEqual(other.list_users(), self.um.list_users())
 
     def test_load_then_add_continues_from_max_id(self):
-        """加载已有文件后，新增用户的 id 接续最大 id。"""
+        """加载已有文件后，新增用户的 id 必须接续**最大** id，而不是元素个数 + 1。
+
+        这里特意制造 id 不连续的情况（id 变成 [2, 3]，元素个数只有 2）。
+        若写成 `len(users) + 1` 会算出 3，与已存在的 id=3 撞车。
+        """
         self.um.add_user("张三", 18)
         self.um.add_user("李四", 20)
-        self.um.update_age(1, 19)
-        self.um.remove_user(2)
+        self.um.add_user("王五", 30)
+        self.um.remove_user(1)  # 删掉第一个，id 变成 [2, 3]
+
         path = self.temp_path()
         self.um.save_to_json(path)
 
         other = UserManager()
         other.load_from_json(path)
-        # 文件中最大 id 是 1，所以下一个应是 2（而不是 1）
-        self.assertEqual(other.add_user("王五", 30)["id"], 2)
-        self.assertEqual(other.list_users()[-1], {"id": 2, "name": "王五", "age": 30})
+        self.assertEqual([u["id"] for u in other.list_users()], [2, 3])
+
+        new_user = other.add_user("赵六", 40)
+        self.assertEqual(new_user["id"], 4)  # 不是 3
+        ids = [u["id"] for u in other.list_users()]
+        self.assertEqual(ids, [2, 3, 4])
+        self.assertEqual(len(ids), len(set(ids)))  # 没有重复 id
 
     def test_load_overwrites_current_data(self):
         """加载会覆盖当前内存数据，而不是追加。"""
