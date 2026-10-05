@@ -49,8 +49,8 @@ python manage.py runserver
 | 项目 | 命令 | 结果 |
 | --- | --- | --- |
 | 选择题答案 | 逐题实跑 10 段代码比对输出 | 10/10 与 `written.md` 一致 |
-| q1 | `cd q1 && python test.py` | **13 tests OK** |
-| q2 | `cd q2 && python test.py` | **16 tests OK** |
+| q1 | `cd q1 && python test.py` | **10 tests OK** |
+| q2 | `cd q2 && python test.py` | **14 tests OK** |
 | project-a | `cd project && python manage.py test blog` | **50 tests OK** |
 | project-a 建表 | `python manage.py migrate` | OK |
 | 并发浏览量 | 8 线程 × 200 次 = 1600 次访问 | `views += 1; save()` → **200**（丢 87.5%）；`F("views") + 1` → **1600** |
