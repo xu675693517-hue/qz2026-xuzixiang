@@ -1,0 +1,96 @@
+{% load static %}<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}文章管理系统{% endblock %}</title>
+  <style>
+    :root { --fg:#1f2328; --muted:#656d76; --line:#d8dee4; --bg:#ffffff; --accent:#0969da; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:#f6f8fa; color:var(--fg);
+           font:15px/1.65 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif; }
+    header { background:var(--bg); border-bottom:1px solid var(--line); }
+    nav { max-width:900px; margin:0 auto; padding:12px 16px;
+          display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+    nav a { color:var(--fg); text-decoration:none; }
+    nav a:hover { color:var(--accent); }
+    nav .spacer { flex:1; }
+    nav form { display:inline; }
+    main { max-width:900px; margin:24px auto; padding:0 16px 64px; }
+    .card { background:var(--bg); border:1px solid var(--line); border-radius:8px;
+            padding:20px 24px; margin-bottom:16px; }
+    h1 { font-size:22px; margin:0 0 12px; }
+    h2 { font-size:17px; margin:28px 0 10px; }
+    .meta { color:var(--muted); font-size:13px; margin-bottom:12px; }
+    .body-text { white-space:pre-wrap; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+    th { color:var(--muted); font-weight:600; background:#f6f8fa; }
+    .muted { color:var(--muted); }
+    .badge { display:inline-block; padding:1px 8px; border-radius:10px; font-size:12px;
+             border:1px solid var(--line); background:#f6f8fa; }
+    .badge-draft { background:#fff8c5; border-color:#d4a72c; }
+    .badge-published { background:#dafbe1; border-color:#1a7f37; }
+    .badge-archived { background:#eaeef2; }
+    .messages { list-style:none; padding:0; max-width:900px; margin:16px auto 0; }
+    .messages li { padding:10px 14px; border-radius:6px; margin-bottom:8px;
+                   background:#ddf4ff; border:1px solid #54aeff; }
+    .messages li.error { background:#ffebe9; border-color:#ff8182; }
+    .messages li.success { background:#dafbe1; border-color:#4ac26b; }
+    form p { margin:0 0 14px; }
+    label { display:block; font-weight:600; margin-bottom:4px; }
+    input[type=text], input[type=password], textarea, select, input[type=file] {
+      width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px;
+      font:inherit; background:#fff; }
+    .helptext { color:var(--muted); font-size:12px; display:block; }
+    .errorlist { color:#cf222e; font-size:13px; margin:4px 0 0; padding-left:18px; }
+    button, .btn { padding:8px 16px; border-radius:6px; border:1px solid var(--line);
+                   background:#f6f8fa; color:var(--fg); cursor:pointer; font:inherit;
+                   text-decoration:none; display:inline-block; }
+    button.primary, .btn.primary { background:#1f883d; border-color:#1f883d; color:#fff; }
+    button.danger { color:#cf222e; }
+    .toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+    .toolbar input, .toolbar select { width:auto; }
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+    .stat { background:#f6f8fa; border:1px solid var(--line); border-radius:8px; padding:14px; }
+    .stat .n { font-size:24px; font-weight:700; }
+    .stat .k { color:var(--muted); font-size:13px; }
+    .thumb { max-width:200px; border:1px solid var(--line); border-radius:6px; }
+    code { background:#eff1f3; padding:1px 5px; border-radius:4px; font-size:13px; }
+  </style>
+</head>
+<body>
+<header>
+  <nav>
+    <strong><a href="{% url 'blog:article_list' %}">文章管理系统</a></strong>
+    {% if user.is_authenticated %}
+      <a href="{% url 'blog:article_create' %}">写文章</a>
+      <a href="{% url 'blog:stats' %}">统计</a>
+      {% if user.is_staff %}<a href="{% url 'admin:index' %}">后台</a>{% endif %}
+      <span class="spacer"></span>
+      <span class="muted">{{ user.username }}</span>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit">登出</button>
+      </form>
+    {% else %}
+      <span class="spacer"></span>
+      <a href="{% url 'login' %}">登录</a>
+      <a href="{% url 'register' %}">注册</a>
+    {% endif %}
+  </nav>
+</header>
+
+{% if messages %}
+  <ul class="messages">
+    {% for message in messages %}
+      <li class="{{ message.tags }}">{{ message }}</li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<main>
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

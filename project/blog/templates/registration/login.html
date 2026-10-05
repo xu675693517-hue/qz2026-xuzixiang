@@ -1,0 +1,25 @@
+{% extends "blog/base.html" %}
+{% block title %}登录{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:420px">
+  <h1>登录</h1>
+  {% if form.errors %}
+    <ul class="errorlist"><li>用户名或密码不正确，请重试。</li></ul>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <p>
+      <label for="{{ form.username.id_for_label }}">用户名</label>
+      {{ form.username }}
+    </p>
+    <p>
+      <label for="{{ form.password.id_for_label }}">密码</label>
+      {{ form.password }}
+    </p>
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit" class="primary">登录</button>
+    <a class="btn" href="{% url 'register' %}">没有账号？去注册</a>
+  </form>
+</div>
+{% endblock %}
