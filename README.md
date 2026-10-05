@@ -1,4 +1,4 @@
-# qz2026-xu675693517-hue
+# qz2026-xuzixiang
 
 中国海洋大学 ITStudio 程序部 · 2026 国庆题目作答。
 
